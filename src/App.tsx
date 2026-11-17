@@ -175,14 +175,14 @@ export default function App() {
   };
 
   return (
-    <div id="top" className="min-h-screen bg-white text-[#2B3A4D] pb-20 md:pb-0">
+    <div id="top" className="min-h-screen bg-white text-[#2B3A4D] pb-24 md:pb-0 overflow-x-clip">
       {/* Top Navigation Bar: Strict 3-zone contract */}
       <header className="border-b border-[#E2E8F0] bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-4 sm:gap-8">
           {/* Zone 1: Single-element Brand Wordmark */}
           <a
             href="#top"
-            className="text-xl font-display font-bold tracking-tight text-[#2B3A4D] whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2B3A4D]"
+            className="text-lg sm:text-xl font-display font-bold tracking-tight text-[#2B3A4D] whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2B3A4D]"
           >
             Stamp pen
           </a>
@@ -224,7 +224,7 @@ export default function App() {
               href={whatsappDirectInquiryUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#2B3A4D] hover:bg-[#1E293B] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors duration-150 whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2B3A4D]"
+              className="inline-flex items-center gap-2 bg-[#2B3A4D] hover:bg-[#1E293B] text-white text-xs sm:text-sm font-medium px-3.5 sm:px-4 py-2 min-h-[40px] rounded-lg transition-colors duration-150 whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2B3A4D]"
             >
               <WhatsAppIcon className="w-4 h-4" />
               <span>اطلب عبر واتساب</span>
@@ -237,9 +237,9 @@ export default function App() {
         {/* Section 1: Hero & Contiguous Product Purchase + Stamp Customizer */}
         <section
           id="product"
-          className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-14 lg:pt-12 lg:pb-20"
+          className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-12 sm:pt-8 sm:pb-14 lg:pt-12 lg:pb-20"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-start">
             {/* Right Column (in RTL): Visual Gallery & Brand Mark */}
             <div className="lg:col-span-6 lg:sticky lg:top-8 space-y-4">
               <div className="max-w-[520px] mx-auto bg-[#F6F8FA] border border-[#E2E8F0] rounded-2xl overflow-hidden p-3 space-y-3">
@@ -285,12 +285,12 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Gallery View Tabs */}
-                <div className="grid grid-cols-4 gap-1.5 p-1 bg-white border border-[#E2E8F0] rounded-xl">
+                {/* Gallery View Tabs: 2x2 on mobile, 4-across on sm+ */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-white border border-[#E2E8F0] rounded-xl">
                   <button
                     type="button"
                     onClick={() => setGalleryView('all')}
-                    className={`px-2 py-2 text-xs font-medium rounded-lg transition-colors duration-150 cursor-pointer whitespace-nowrap ${
+                    className={`px-2 py-2 min-h-[44px] sm:min-h-[38px] text-xs font-medium rounded-lg transition-colors duration-150 cursor-pointer whitespace-nowrap ${
                       galleryView === 'all'
                         ? 'bg-[#2B3A4D] text-white'
                         : 'text-[#526277] hover:text-[#2B3A4D]'
@@ -308,7 +308,7 @@ export default function App() {
                           setGalleryView(colorOpt.id);
                           setPenColor(colorOpt.id);
                         }}
-                        className={`inline-flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium rounded-lg transition-colors duration-150 cursor-pointer whitespace-nowrap ${
+                        className={`inline-flex items-center justify-center gap-1.5 px-2 py-2 min-h-[44px] sm:min-h-[38px] text-xs font-medium rounded-lg transition-colors duration-150 cursor-pointer whitespace-nowrap ${
                           active
                             ? 'bg-[#2B3A4D] text-white'
                             : 'text-[#526277] hover:text-[#2B3A4D]'
@@ -327,9 +327,9 @@ export default function App() {
               </div>
 
               {/* Brand Identity Strip featuring the Fingerprint Logo */}
-              <div className="max-w-[520px] mx-auto bg-white border border-[#E2E8F0] rounded-xl p-4 sm:p-5 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="w-16 h-16 rounded-lg border border-[#E2E8F0] bg-white flex items-center justify-center shrink-0 overflow-hidden p-1.5">
+              <div className="max-w-[520px] mx-auto bg-white border border-[#E2E8F0] rounded-xl p-3 sm:p-5 flex items-center justify-between gap-3 sm:gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg border border-[#E2E8F0] bg-white flex items-center justify-center shrink-0 overflow-hidden p-1 sm:p-1.5">
                     {!logoImgError ? (
                       <img
                         src={LOGO_IMAGE_SRC}
@@ -345,10 +345,10 @@ export default function App() {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="font-display font-semibold text-base text-[#2B3A4D]">
+                    <p className="font-display font-semibold text-sm sm:text-base text-[#2B3A4D]">
                       أناقتك تبدأ بتوقيعك
                     </p>
-                    <p className="text-sm text-[#526277] mt-0.5 leading-relaxed">
+                    <p className="text-xs sm:text-sm text-[#526277] mt-0.5 leading-relaxed">
                       مثالي لتوقيع الأوراق والختم الرسمي في لحظة واحدة
                     </p>
                   </div>
@@ -407,7 +407,7 @@ export default function App() {
                   <span className="block text-sm font-semibold text-[#2B3A4D] mb-2">
                     1. اختر لون القلم
                   </span>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                     {PEN_COLORS.map((opt) => {
                       const active = penColor === opt.id;
                       return (
@@ -415,14 +415,14 @@ export default function App() {
                           key={opt.id}
                           type="button"
                           onClick={() => setPenColor(opt.id)}
-                          className={`inline-flex items-center justify-center gap-2 px-3 py-2.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors duration-150 cursor-pointer whitespace-nowrap ${
+                          className={`inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2.5 min-h-[44px] text-xs sm:text-sm font-medium rounded-lg border transition-colors duration-150 cursor-pointer whitespace-nowrap ${
                             active
                               ? 'border-[#2B3A4D] bg-[#2B3A4D] text-white'
                               : 'border-[#E2E8F0] bg-white text-[#526277] hover:border-[#94A3B8] hover:text-[#2B3A4D]'
                           }`}
                         >
                           <span
-                            className="w-3.5 h-3.5 rounded-full border border-black/15 shrink-0"
+                            className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border border-black/15 shrink-0"
                             style={{ backgroundColor: opt.swatch }}
                             aria-hidden="true"
                           />
@@ -446,7 +446,7 @@ export default function App() {
                           key={item.id}
                           type="button"
                           onClick={() => setCategory(item.id)}
-                          className={`px-3 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors duration-150 whitespace-nowrap cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2B3A4D] ${
+                          className={`px-3 py-2 min-h-[44px] sm:min-h-[38px] text-xs sm:text-sm font-medium rounded-md transition-colors duration-150 whitespace-nowrap cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2B3A4D] ${
                             active
                               ? 'bg-[#2B3A4D] text-white'
                               : 'text-[#526277] hover:text-[#2B3A4D]'
@@ -459,7 +459,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 2. Stamp Text Inputs */}
+                {/* 2. Stamp Text Inputs (16px on mobile to prevent iOS auto-zoom) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label
@@ -474,7 +474,7 @@ export default function App() {
                       value={primaryText}
                       onChange={(e) => setPrimaryText(e.target.value)}
                       placeholder={activeCategoryConfig.placeholderPrimary}
-                      className="w-full px-3.5 py-2.5 text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#2B3A4D] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#2B3A4D] focus:ring-1 focus:ring-[#2B3A4D] transition-colors"
+                      className="w-full min-h-[46px] sm:min-h-[42px] px-3.5 py-2.5 text-base sm:text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#2B3A4D] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#2B3A4D] focus:ring-1 focus:ring-[#2B3A4D] transition-colors"
                     />
                   </div>
                   <div>
@@ -490,7 +490,7 @@ export default function App() {
                       value={secondaryText}
                       onChange={(e) => setSecondaryText(e.target.value)}
                       placeholder={activeCategoryConfig.placeholderSecondary}
-                      className="w-full px-3.5 py-2.5 text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#2B3A4D] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#2B3A4D] focus:ring-1 focus:ring-[#2B3A4D] transition-colors"
+                      className="w-full min-h-[46px] sm:min-h-[42px] px-3.5 py-2.5 text-base sm:text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#2B3A4D] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#2B3A4D] focus:ring-1 focus:ring-[#2B3A4D] transition-colors"
                     />
                   </div>
                 </div>
@@ -517,7 +517,7 @@ export default function App() {
                             key={opt.id}
                             type="button"
                             onClick={() => setInkColor(opt.id)}
-                            className={`inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg border transition-colors duration-150 cursor-pointer whitespace-nowrap shrink-0 ${
+                            className={`inline-flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] sm:min-h-[38px] text-xs sm:text-sm font-medium rounded-lg border transition-colors duration-150 cursor-pointer whitespace-nowrap shrink-0 ${
                               active
                                 ? 'border-[#2B3A4D] bg-[#F6F8FA] text-[#2B3A4D]'
                                 : 'border-[#E2E8F0] bg-white text-[#526277] hover:border-[#94A3B8]'
@@ -547,7 +547,7 @@ export default function App() {
                             key={opt.id}
                             type="button"
                             onClick={() => setFrameStyle(opt.id)}
-                            className={`px-3 py-2 text-xs sm:text-sm font-medium rounded-lg border transition-colors duration-150 cursor-pointer whitespace-nowrap shrink-0 ${
+                            className={`px-3 py-2 min-h-[44px] sm:min-h-[38px] text-xs sm:text-sm font-medium rounded-lg border transition-colors duration-150 cursor-pointer whitespace-nowrap shrink-0 ${
                               active
                                 ? 'border-[#2B3A4D] bg-[#2B3A4D] text-white'
                                 : 'border-[#E2E8F0] bg-white text-[#526277] hover:border-[#94A3B8]'
@@ -567,12 +567,12 @@ export default function App() {
                     <span className="block text-sm font-semibold text-[#2B3A4D] mb-1.5">
                       الكمية
                     </span>
-                    <div className="inline-flex items-center justify-between w-full border border-[#E2E8F0] rounded-lg bg-white h-[42px] px-2">
+                    <div className="inline-flex items-center justify-between w-full border border-[#E2E8F0] rounded-lg bg-white h-[46px] sm:h-[42px] px-1.5 sm:px-2">
                       <button
                         type="button"
                         onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                         aria-label="إنقاص الكمية"
-                        className="w-8 h-8 flex items-center justify-center rounded-md text-[#2B3A4D] hover:bg-[#F6F8FA] transition-colors cursor-pointer"
+                        className="w-11 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-md text-[#2B3A4D] hover:bg-[#F6F8FA] transition-colors cursor-pointer"
                       >
                         <Minus className="w-4 h-4" />
                       </button>
@@ -583,7 +583,7 @@ export default function App() {
                         type="button"
                         onClick={() => setQuantity((q) => Math.min(50, q + 1))}
                         aria-label="زيادة الكمية"
-                        className="w-8 h-8 flex items-center justify-center rounded-md text-[#2B3A4D] hover:bg-[#F6F8FA] transition-colors cursor-pointer"
+                        className="w-11 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-md text-[#2B3A4D] hover:bg-[#F6F8FA] transition-colors cursor-pointer"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -601,7 +601,7 @@ export default function App() {
                       id="region-select"
                       value={region}
                       onChange={(e) => setRegion(e.target.value)}
-                      className="w-full h-[42px] px-3 text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#2B3A4D] focus:outline-none focus:border-[#2B3A4D] focus:ring-1 focus:ring-[#2B3A4D]"
+                      className="w-full h-[46px] sm:h-[42px] px-3 text-base sm:text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#2B3A4D] focus:outline-none focus:border-[#2B3A4D] focus:ring-1 focus:ring-[#2B3A4D]"
                     >
                       {KSA_REGIONS.map((city) => (
                         <option key={city} value={city}>
@@ -615,7 +615,7 @@ export default function App() {
                     <span className="block text-sm font-semibold text-[#2B3A4D] mb-1.5">
                       طريقة الدفع
                     </span>
-                    <div className="grid grid-cols-2 gap-1 p-1 bg-[#F6F8FA] border border-[#E2E8F0] rounded-lg h-[42px]">
+                    <div className="grid grid-cols-2 gap-1 p-1 bg-[#F6F8FA] border border-[#E2E8F0] rounded-lg h-[46px] sm:h-[42px]">
                       <button
                         type="button"
                         onClick={() => setPaymentMethod('cod')}
@@ -656,7 +656,7 @@ export default function App() {
                     value={customerNotes}
                     onChange={(e) => setCustomerNotes(e.target.value)}
                     placeholder="مثال: أرغب بإرسال صورة الشعار في محادثة الواتساب"
-                    className="w-full px-3.5 py-2.5 text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#2B3A4D] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#2B3A4D] focus:ring-1 focus:ring-[#2B3A4D] transition-colors"
+                    className="w-full min-h-[46px] sm:min-h-[42px] px-3.5 py-2.5 text-base sm:text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#2B3A4D] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#2B3A4D] focus:ring-1 focus:ring-[#2B3A4D] transition-colors"
                   />
                 </div>
 
@@ -667,7 +667,7 @@ export default function App() {
                       href={whatsappOrderUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 inline-flex items-center justify-center gap-2.5 bg-[#2B3A4D] hover:bg-[#1E293B] text-white font-semibold text-base px-6 py-3.5 rounded-xl transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2B3A4D]"
+                      className="flex-1 min-h-[48px] inline-flex items-center justify-center gap-2.5 bg-[#2B3A4D] hover:bg-[#1E293B] text-white font-semibold text-base px-6 py-3.5 rounded-xl transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2B3A4D]"
                     >
                       <WhatsAppIcon className="w-5 h-5 text-[#4ADE80]" />
                       <span>اطلب الآن عبر واتساب</span>
@@ -676,7 +676,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={handleCopySummary}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-3.5 border border-[#E2E8F0] hover:border-[#2B3A4D] bg-white text-[#2B3A4D] text-sm font-medium rounded-xl transition-colors duration-150 cursor-pointer whitespace-nowrap shrink-0"
+                      className="min-h-[48px] inline-flex items-center justify-center gap-2 px-4 py-3.5 border border-[#E2E8F0] hover:border-[#2B3A4D] bg-white text-[#2B3A4D] text-sm font-medium rounded-xl transition-colors duration-150 cursor-pointer whitespace-nowrap shrink-0"
                     >
                       {copied ? (
                         <>
@@ -837,25 +837,25 @@ export default function App() {
               </div>
 
               <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between py-2.5 border-b border-[#E2E8F0]">
+                <div className="flex flex-wrap items-center justify-between gap-2 py-2.5 border-b border-[#E2E8F0]">
                   <span className="text-[#526277]">تخصيص الختم بالطلب</span>
                   <span className="font-semibold text-[#2B3A4D]">
                     متاح لأي نص أو شعار
                   </span>
                 </div>
-                <div className="flex items-center justify-between py-2.5 border-b border-[#E2E8F0]">
+                <div className="flex flex-wrap items-center justify-between gap-2 py-2.5 border-b border-[#E2E8F0]">
                   <span className="text-[#526277]">نطاق التوصيل</span>
                   <span className="font-semibold text-[#2B3A4D]">
                     جميع مناطق المملكة
                   </span>
                 </div>
-                <div className="flex items-center justify-between py-2.5 border-b border-[#E2E8F0]">
+                <div className="flex flex-wrap items-center justify-between gap-2 py-2.5 border-b border-[#E2E8F0]">
                   <span className="text-[#526277]">رسوم الشحن</span>
                   <span className="font-semibold text-[#2B3A4D]">
                     تُحدد حسب المنطقة (غير مشمولة)
                   </span>
                 </div>
-                <div className="flex items-center justify-between py-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                   <span className="text-[#526277]">الدفع عند الاستلام</span>
                   <span className="font-semibold text-[#2B3A4D]">متوفر</span>
                 </div>
@@ -865,7 +865,7 @@ export default function App() {
                 href={whatsappOrderUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-center gap-2 bg-[#2B3A4D] hover:bg-[#1E293B] text-white font-semibold text-sm px-5 py-3 rounded-xl transition-colors duration-150"
+                className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 bg-[#2B3A4D] hover:bg-[#1E293B] text-white font-semibold text-sm px-5 py-3 rounded-xl transition-colors duration-150"
               >
                 <WhatsAppIcon className="w-4 h-4 text-[#4ADE80]" />
                 <span>تأكيد الطلب ومعرفة رسوم الشحن عبر واتساب</span>
@@ -877,10 +877,10 @@ export default function App() {
         {/* Section 4: Social Accounts & Contact */}
         <section
           id="contact"
-          className="bg-[#2B3A4D] text-white py-14 lg:py-16"
+          className="bg-[#2B3A4D] text-white py-12 sm:py-14 lg:py-16"
         >
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center">
               <div className="lg:col-span-6 space-y-2">
                 <h2 className="font-display font-bold text-2xl sm:text-3xl text-white tracking-wide">
                   للطلب والاستفسار تواصل معنا عبر حساباتنا
@@ -891,18 +891,18 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-3.5">
                 <a
                   href={whatsappDirectInquiryUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl p-4 flex flex-col justify-between gap-3 transition-colors duration-150"
+                  className="bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl p-4 min-h-[56px] flex flex-row sm:flex-col items-center sm:items-stretch justify-between gap-3 transition-colors duration-150"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-200">
+                  <div className="flex items-center gap-2.5 sm:justify-between">
+                    <WhatsAppIcon className="w-5 h-5 text-[#4ADE80] sm:order-2" />
+                    <span className="text-sm sm:text-xs font-medium text-slate-200 sm:order-1">
                       واتساب
                     </span>
-                    <WhatsAppIcon className="w-5 h-5 text-[#4ADE80]" />
                   </div>
                   <span
                     dir="ltr"
@@ -916,13 +916,13 @@ export default function App() {
                   href="https://www.instagram.com/stamp.pen"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl p-4 flex flex-col justify-between gap-3 transition-colors duration-150"
+                  className="bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl p-4 min-h-[56px] flex flex-row sm:flex-col items-center sm:items-stretch justify-between gap-3 transition-colors duration-150"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-200">
+                  <div className="flex items-center gap-2.5 sm:justify-between">
+                    <InstagramIcon className="w-5 h-5 text-white sm:order-2" />
+                    <span className="text-sm sm:text-xs font-medium text-slate-200 sm:order-1">
                       إنستغرام
                     </span>
-                    <InstagramIcon className="w-5 h-5 text-white" />
                   </div>
                   <span
                     dir="ltr"
@@ -936,13 +936,13 @@ export default function App() {
                   href="https://www.tiktok.com/@stamp.pen"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl p-4 flex flex-col justify-between gap-3 transition-colors duration-150"
+                  className="bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl p-4 min-h-[56px] flex flex-row sm:flex-col items-center sm:items-stretch justify-between gap-3 transition-colors duration-150"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-200">
+                  <div className="flex items-center gap-2.5 sm:justify-between">
+                    <TikTokIcon className="w-5 h-5 text-white sm:order-2" />
+                    <span className="text-sm sm:text-xs font-medium text-slate-200 sm:order-1">
                       تيك توك
                     </span>
-                    <TikTokIcon className="w-5 h-5 text-white" />
                   </div>
                   <span
                     dir="ltr"
@@ -982,21 +982,21 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Mobile Compact Sticky Bottom Order Bar (< 15% mobile viewport height) */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-[#E2E8F0] px-4 py-2.5 flex items-center justify-between gap-3">
+      {/* Mobile Compact Sticky Bottom Order Bar (< 15% mobile viewport height + safe-area) */}
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-sm border-t border-[#E2E8F0] px-4 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-sm font-bold text-[#2B3A4D] tabular-nums">
+          <div className="text-sm font-bold text-[#2B3A4D] tabular-nums truncate">
             {quantity > 1 ? `الإجمالي: ${subtotal} ريال` : 'قلم الختم الشخصي'}
           </div>
           <div className="text-[11px] text-[#526277] truncate">
-            الدفع عند الاستلام · {region}
+            {activePenColorConfig.label} · {region}
           </div>
         </div>
         <a
           href={whatsappOrderUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-[#2B3A4D] hover:bg-[#1E293B] text-white text-sm font-semibold px-4 py-2.5 rounded-lg whitespace-nowrap shrink-0"
+          className="inline-flex items-center gap-2 bg-[#2B3A4D] hover:bg-[#1E293B] text-white text-sm font-semibold px-4 py-2.5 min-h-[44px] rounded-lg whitespace-nowrap shrink-0"
         >
           <WhatsAppIcon className="w-4 h-4 text-[#4ADE80]" />
           <span>اطلب واتساب</span>
