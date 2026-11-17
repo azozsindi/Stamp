@@ -1,0 +1,6 @@
+{
+  "name": "Stamp pen | متجر قلم الختم",
+  "description": "متجر قلم الختم الشخصي بـ 70 ريال فقط — إمكانية إضافة أي ختم ترغب به، توصيل لجميع مناطق المملكة والدفع عند الاستلام، مع الطلب المباشر عبر واتساب.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
