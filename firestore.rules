@@ -27,14 +27,8 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email_verified == true;
     }
 
-    function isBootstrappedAdmin() {
-      return isVerifiedUser() && request.auth.token.email.lower() == 'azozsindi23@gmail.com';
-    }
-
     function isAdmin() {
-      return isBootstrappedAdmin() || (
-        isVerifiedUser() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-      );
+      return isVerifiedUser() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     function isValidBannerConfig(data) {

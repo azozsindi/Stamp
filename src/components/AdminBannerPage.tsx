@@ -19,7 +19,6 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import {
-  BOOTSTRAPPED_ADMIN_EMAIL,
   OperationType,
   auth,
   db,
@@ -86,15 +85,6 @@ export function AdminBannerPage({
 
       if (!nextUser) {
         setIsAdminVerified(false);
-        return;
-      }
-
-      const normalizedEmail = (nextUser.email || '').trim().toLowerCase();
-      if (
-        normalizedEmail === BOOTSTRAPPED_ADMIN_EMAIL &&
-        nextUser.emailVerified
-      ) {
-        setIsAdminVerified(true);
         return;
       }
 
@@ -172,12 +162,11 @@ export function AdminBannerPage({
     await user.reload();
     const refreshed = auth.currentUser;
     if (refreshed?.emailVerified) {
-      const normalizedEmail = (refreshed.email || '').trim().toLowerCase();
-      if (normalizedEmail === BOOTSTRAPPED_ADMIN_EMAIL) {
-        setIsAdminVerified(true);
-      } else {
+      try {
         const adminSnap = await getDoc(doc(db, 'admins', refreshed.uid));
         setIsAdminVerified(adminSnap.exists());
+      } catch {
+        setIsAdminVerified(false);
       }
       setUser({ ...refreshed } as User);
     } else {
@@ -336,7 +325,7 @@ export function AdminBannerPage({
                   required
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="AzozSindi23@gmail.com"
+                  placeholder="admin@example.com"
                   className="w-full min-h-[46px] px-3.5 py-2.5 text-base sm:text-sm text-left bg-white border border-[#E2E8F0] rounded-xl text-[#2B3A4D] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#2B3A4D] focus:ring-1 focus:ring-[#2B3A4D]"
                 />
               </div>
@@ -449,8 +438,15 @@ export function AdminBannerPage({
             </h1>
             <p className="text-sm text-[#526277] leading-relaxed">
               الحساب المسجل حالياً (<span dir="ltr">{user.email}</span>) لا يملك
-              صلاحية تعديل بنر المتجر. يرجى تسجيل الدخول بحساب مالك المتجر.
+              صلاحية تعديل بنر المتجر. يرجى تسجيل الدخول بحساب مالك المتجر أو
+              إضافة المعرف التالي في مجموعة <span dir="ltr">admins</span> بقاعدة البيانات:
             </p>
+            <div
+              dir="ltr"
+              className="bg-[#F6F8FA] border border-[#E2E8F0] rounded-xl px-3 py-2 text-xs text-[#2B3A4D] font-mono select-all break-all"
+            >
+              {user.uid}
+            </div>
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 type="button"
