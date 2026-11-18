@@ -1,7 +1,7 @@
 # Security Specification & Payload-First TDD (`security_spec.md`)
 
 ## 1. Data Invariants
-1. Only verified store administrators (a UID present in `/admins/{uid}` with `email_verified == true`) may create, update, or delete `/site_settings/banner` or `/admins/{userId}`.
+1. Only store administrators whose authenticated Firebase Auth UID is explicitly registered in `/admins/{uid}` may create, update, or delete `/site_settings/banner` or `/admins/{userId}`.
 2. Storefront visitors (authenticated or unauthenticated) may ONLY `get` the single public document `/site_settings/banner`. Listing `/site_settings` or reading arbitrary setting IDs is denied.
 3. Every write to `/site_settings/banner` MUST pass `isValidBannerConfig(incoming())`: strict allowlist of keys (`isActive`, `text`, `ctaLabel`, `ctaTarget`, `theme`, `dismissible`, `updatedAt`, `updatedBy`), exact types, bounded string lengths (`text` 1..140, `ctaLabel` 0..40), strict enums (`ctaTarget`, `theme`), `updatedBy == request.auth.uid`, and `updatedAt == request.time`.
 4. Path variables `{settingId}` and `{userId}` MUST pass `isValidId(...)` (`^[a-zA-Z0-9_\-]+$`, `size() <= 128`).
@@ -10,7 +10,7 @@
 ## 2. The "Dirty Dozen" Attack Payloads (All Must Yield `PERMISSION_DENIED`)
 1. Unauthenticated write to `/site_settings/banner`.
 2. Signed-in non-admin user attempts to `set` or `update` `/site_settings/banner`.
-3. Spoofed or unverified admin account where UID is listed in `/admins/{uid}` (or any user) but `email_verified == false`.
+3. Spoofed identity where `updatedBy` does not match `request.auth.uid` or an arbitrary signed-in user attempts to impersonate an admin without a record in `/admins/{uid}`.
 4. Self-privilege escalation: non-admin user attempts `create` on `/admins/{request.auth.uid}` with `{ "role": "admin" }`.
 5. Shadow field injection on `/site_settings/banner` (e.g., adding `"isVerified": true` or `"extraScript": "<script>"`).
 6. Oversized `text` string (> 140 characters, e.g., 10KB DoW payload) written to `/site_settings/banner`.
