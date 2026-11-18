@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  User,
-  onAuthStateChanged,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signOut,
-} from 'firebase/auth';
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import {
   ArrowRight,
   Check,
   Eye,
@@ -16,14 +8,7 @@ import {
   LogOut,
   RotateCcw,
   Save,
-  ShieldAlert,
 } from 'lucide-react';
-import {
-  OperationType,
-  auth,
-  db,
-  handleFirestoreError,
-} from '../firebase';
 import {
   BannerConfig,
   BannerCtaTarget,
@@ -36,8 +21,11 @@ interface AdminBannerPageProps {
   currentBanner: BannerConfig;
   bannerLoading: boolean;
   whatsappUrl: string;
+  onBannerSaved: (banner: BannerConfig) => void;
   onExitAdmin: () => void;
 }
+
+const TOKEN_STORAGE_KEY = 'stamp_pen_admin_token';
 
 const THEME_OPTIONS: { id: BannerTheme; label: string; swatch: string }[] = [
   { id: 'navy', label: 'أزرق البصمة', swatch: '#2B3A4D' },
@@ -54,149 +42,160 @@ const TARGET_OPTIONS: { id: BannerCtaTarget; label: string }[] = [
   { id: 'whatsapp', label: 'محادثة واتساب مباشرة' },
 ];
 
-const ADMIN_USERNAME_DOMAIN = 'stamp-pen.app';
+function getStoredToken(): string {
+  try {
+    return window.sessionStorage.getItem(TOKEN_STORAGE_KEY) || '';
+  } catch {
+    return '';
+  }
+}
 
-function resolveAuthEmail(input: string): string {
-  const trimmed = input.trim();
-  if (!trimmed) return '';
-  if (trimmed.includes('@')) return trimmed;
-  return `${trimmed.toLowerCase()}@${ADMIN_USERNAME_DOMAIN}`;
+function setStoredToken(token: string): void {
+  try {
+    if (token) {
+      window.sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+    } else {
+      window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore storage restriction errors
+  }
 }
 
 export function AdminBannerPage({
   currentBanner,
   bannerLoading,
   whatsappUrl,
+  onBannerSaved,
   onExitAdmin,
 }: AdminBannerPageProps) {
-  const [user, setUser] = useState<User | null>(auth.currentUser);
   const [authReady, setAuthReady] = useState(false);
-  const [isAdminVerified, setIsAdminVerified] = useState(false);
-  const [checkingAdmin, setCheckingAdmin] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [adminUsername, setAdminUsername] = useState<string>('');
 
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
 
   const [formState, setFormState] = useState<BannerConfig>(currentBanner);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [ephemeralNotice, setEphemeralNotice] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (nextUser) => {
-      setUser(nextUser);
-      setAuthReady(true);
-      setErrorMessage(null);
-
-      if (!nextUser) {
-        setIsAdminVerified(false);
-        return;
-      }
-
-      setCheckingAdmin(true);
+    let cancelled = false;
+    const verifySession = async () => {
+      const token = getStoredToken();
       try {
-        const adminSnap = await getDoc(doc(db, 'admins', nextUser.uid));
-        setIsAdminVerified(adminSnap.exists());
+        const res = await fetch('/api/admin/session', {
+          method: 'GET',
+          credentials: 'include',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          cache: 'no-store',
+        });
+        if (!cancelled && res.ok) {
+          const data = (await res.json()) as {
+            authenticated?: boolean;
+            username?: string;
+          };
+          if (data.authenticated) {
+            setAuthenticated(true);
+            setAdminUsername(data.username || '');
+          } else {
+            setAuthenticated(false);
+            setStoredToken('');
+          }
+        } else if (!cancelled) {
+          setAuthenticated(false);
+          setStoredToken('');
+        }
       } catch {
-        setIsAdminVerified(false);
+        if (!cancelled) {
+          setAuthenticated(false);
+        }
       } finally {
-        setCheckingAdmin(false);
+        if (!cancelled) {
+          setAuthReady(true);
+        }
       }
-    });
+    };
 
-    return () => unsubscribe();
+    void verifySession();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     setFormState(currentBanner);
   }, [currentBanner]);
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
-    setResetSent(false);
 
-    const authEmail = resolveAuthEmail(loginUsername);
-    if (!authEmail || !loginPassword) {
+    const trimmedUsername = loginUsername.trim();
+    if (!trimmedUsername || !loginPassword) {
       setErrorMessage('يرجى إدخال اسم المستخدم وكلمة المرور.');
       return;
     }
 
     setSigningIn(true);
     try {
-      await signInWithEmailAndPassword(auth, authEmail, loginPassword);
-      setLoginPassword('');
-    } catch (err: unknown) {
-      const code =
-        typeof err === 'object' && err !== null && 'code' in err
-          ? String((err as { code?: string }).code)
-          : '';
-      if (
-        code === 'auth/invalid-credential' ||
-        code === 'auth/wrong-password' ||
-        code === 'auth/user-not-found' ||
-        code === 'auth/invalid-email'
-      ) {
-        setErrorMessage('اسم المستخدم أو كلمة المرور غير صحيحة.');
-      } else if (code === 'auth/operation-not-allowed') {
-        setErrorMessage(
-          'تسجيل الدخول بالاسم وكلمة المرور غير مفعّل بعد في Firebase Console (Authentication → Sign-in method → Email/Password).'
-        );
-      } else if (code === 'auth/too-many-requests') {
-        setErrorMessage('تم حظر المحاولات مؤقتاً لكثرتها. حاول بعد قليل.');
-      } else {
-        setErrorMessage('تعذر تسجيل الدخول. يرجى التحقق من البيانات والمحاولة مرة أخرى.');
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: trimmedUsername,
+          password: loginPassword,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        authenticated?: boolean;
+        username?: string;
+        token?: string;
+        error?: string;
+      };
+
+      if (!res.ok || !data.authenticated) {
+        setErrorMessage(data.error || 'اسم المستخدم أو كلمة المرور غير صحيحة.');
+        return;
       }
+
+      if (data.token) {
+        setStoredToken(data.token);
+      }
+      setAdminUsername(data.username || trimmedUsername);
+      setAuthenticated(true);
+      setLoginPassword('');
+    } catch {
+      setErrorMessage('تعذر الاتصال بالخادم حالياً. يرجى المحاولة مرة أخرى.');
     } finally {
       setSigningIn(false);
     }
   };
 
-  const handlePasswordReset = async () => {
-    setErrorMessage(null);
-    setResetSent(false);
-    const trimmed = loginUsername.trim();
-    if (!trimmed) {
-      setErrorMessage('اكتب اسم المستخدم أو البريد الإلكتروني أولاً.');
-      return;
-    }
-    if (!trimmed.includes('@')) {
-      setErrorMessage(
-        'لتغيير كلمة مرور اسم المستخدم، يتم تعديلها مباشرة من لوحة تحكم Firebase (Authentication → Users).'
-      );
-      return;
-    }
-    try {
-      await sendPasswordResetEmail(auth, trimmed);
-      setResetSent(true);
-    } catch (err: unknown) {
-      const code =
-        typeof err === 'object' && err !== null && 'code' in err
-          ? String((err as { code?: string }).code)
-          : '';
-      if (code === 'auth/invalid-email') {
-        setErrorMessage('صيغة البريد الإلكتروني غير صحيحة.');
-      } else if (code === 'auth/too-many-requests') {
-        setErrorMessage('تم إرسال طلبات كثيرة. يرجى الانتظار قليلاً والمحاولة مجدداً.');
-      } else {
-        setResetSent(true);
-      }
-    }
-  };
-
   const handleSignOut = async () => {
     setErrorMessage(null);
-    setResetSent(false);
-    await signOut(auth);
+    setSaveSuccess(false);
+    setStoredToken('');
+    setAuthenticated(false);
+    setAdminUsername('');
+    try {
+      await fetch('/api/admin/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // Ignore network error on sign out
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
-
     const cleanText = formState.text.trim().slice(0, 140);
     const cleanCtaLabel = formState.ctaLabel.trim().slice(0, 40);
 
@@ -207,26 +206,55 @@ export function AdminBannerPage({
 
     setSaving(true);
     setSaveSuccess(false);
+    setEphemeralNotice(false);
     setErrorMessage(null);
 
-    const payload = {
-      isActive: Boolean(formState.isActive),
-      text: cleanText,
-      ctaLabel: cleanCtaLabel,
-      ctaTarget: formState.ctaTarget,
-      theme: formState.theme,
-      dismissible: Boolean(formState.dismissible),
-      updatedAt: serverTimestamp(),
-      updatedBy: user.uid,
-    };
-
+    const token = getStoredToken();
     try {
-      await setDoc(doc(db, 'site_settings', 'banner'), payload);
+      const res = await fetch('/api/banner', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          isActive: Boolean(formState.isActive),
+          text: cleanText,
+          ctaLabel: cleanCtaLabel,
+          ctaTarget: formState.ctaTarget,
+          theme: formState.theme,
+          dismissible: Boolean(formState.dismissible),
+        }),
+      });
+
+      const data = (await res.json().catch(() => ({}))) as {
+        banner?: BannerConfig;
+        storage?: 'kv' | 'disk' | 'ephemeral';
+        error?: string;
+      };
+
+      if (res.status === 401) {
+        setAuthenticated(false);
+        setStoredToken('');
+        setErrorMessage('انتهت جلسة الدخول. يرجى تسجيل الدخول مجدداً.');
+        return;
+      }
+
+      if (!res.ok || !data.banner) {
+        setErrorMessage(data.error || 'تعذر حفظ التغييرات حالياً.');
+        return;
+      }
+
+      setFormState(data.banner);
+      onBannerSaved(data.banner);
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (err) {
-      setErrorMessage('تعذر حفظ التغييرات. تأكد من صلاحيات الإدارة والاتصال.');
-      handleFirestoreError(err, OperationType.WRITE, 'site_settings/banner');
+      if (data.storage === 'ephemeral') {
+        setEphemeralNotice(true);
+      }
+      setTimeout(() => setSaveSuccess(false), 3500);
+    } catch {
+      setErrorMessage('تعذر الاتصال بالخادم لحفظ التعديلات.');
     } finally {
       setSaving(false);
     }
@@ -239,7 +267,7 @@ export function AdminBannerPage({
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm sm:text-base font-display font-bold text-[#2B3A4D] min-w-0 truncate">
             <span className="truncate">Stamp pen</span>
-            {isAdminVerified && (
+            {authenticated && (
               <>
                 <span className="text-[#94A3B8]" aria-hidden="true">
                   /
@@ -252,14 +280,16 @@ export function AdminBannerPage({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {user && (
+            {authenticated && (
               <button
                 type="button"
                 onClick={handleSignOut}
                 className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] text-xs sm:text-sm font-medium text-[#526277] hover:text-[#2B3A4D] border border-[#E2E8F0] rounded-lg bg-white transition-colors cursor-pointer whitespace-nowrap"
               >
                 <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">تسجيل الخروج</span>
+                <span className="hidden sm:inline">
+                  خروج{adminUsername ? ` (${adminUsername})` : ''}
+                </span>
               </button>
             )}
             <button
@@ -275,13 +305,13 @@ export function AdminBannerPage({
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        {!authReady || checkingAdmin ? (
+        {!authReady ? (
           <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 sm:p-8 space-y-4">
             <div className="h-6 w-48 bg-[#F6F8FA] rounded animate-pulse" />
             <div className="h-12 w-full bg-[#F6F8FA] rounded animate-pulse" />
             <div className="h-32 w-full bg-[#F6F8FA] rounded animate-pulse" />
           </div>
-        ) : !user ? (
+        ) : !authenticated ? (
           <div className="max-w-md mx-auto bg-white border border-[#E2E8F0] rounded-2xl p-6 sm:p-8 space-y-5">
             <div className="space-y-1.5 text-center">
               <div className="w-11 h-11 rounded-xl bg-[#F6F8FA] border border-[#E2E8F0] text-[#2B3A4D] flex items-center justify-center mx-auto mb-2">
@@ -291,7 +321,7 @@ export function AdminBannerPage({
                 دخول الإدارة
               </h1>
               <p className="text-sm text-[#526277] leading-relaxed">
-                هذه الصفحة مخصصة لصاحب المتجر فقط. أدخل بيانات الدخول للمتابعة.
+                هذه الصفحة مخصصة لصاحب المتجر فقط. أدخل اسم المستخدم وكلمة المرور للمتابعة.
               </p>
             </div>
 
@@ -304,16 +334,7 @@ export function AdminBannerPage({
               </div>
             )}
 
-            {resetSent && (
-              <div
-                role="status"
-                className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm rounded-xl p-3.5 text-right leading-relaxed"
-              >
-                إذا كان البريد مسجلاً، فقد تم إرسال رابط إعادة تعيين كلمة المرور إليه.
-              </div>
-            )}
-
-            <form onSubmit={handleEmailSignIn} className="space-y-4">
+            <form onSubmit={handleSignIn} className="space-y-4">
               <div>
                 <label
                   htmlFor="admin-login-username"
@@ -329,27 +350,18 @@ export function AdminBannerPage({
                   required
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
-                  placeholder="pinadmin"
+                  placeholder="اسم المستخدم"
                   className="w-full min-h-[46px] px-3.5 py-2.5 text-base sm:text-sm text-left bg-white border border-[#E2E8F0] rounded-xl text-[#2B3A4D] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#2B3A4D] focus:ring-1 focus:ring-[#2B3A4D]"
                 />
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label
-                    htmlFor="admin-login-password"
-                    className="block text-sm font-semibold text-[#2B3A4D]"
-                  >
-                    كلمة المرور
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handlePasswordReset}
-                    className="text-xs font-medium text-[#526277] hover:text-[#2B3A4D] transition-colors cursor-pointer"
-                  >
-                    نسيت كلمة المرور؟
-                  </button>
-                </div>
+                <label
+                  htmlFor="admin-login-password"
+                  className="block text-sm font-semibold text-[#2B3A4D] mb-1.5"
+                >
+                  كلمة المرور
+                </label>
                 <div className="relative">
                   <input
                     id="admin-login-password"
@@ -385,41 +397,6 @@ export function AdminBannerPage({
                 <span>{signingIn ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}</span>
               </button>
             </form>
-          </div>
-        ) : !isAdminVerified ? (
-          <div className="max-w-lg mx-auto bg-white border border-[#E2E8F0] rounded-2xl p-6 sm:p-8 space-y-4 text-center">
-            <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center mx-auto">
-              <ShieldAlert className="w-6 h-6" />
-            </div>
-            <h1 className="font-display font-bold text-xl text-[#2B3A4D]">
-              الحساب غير مصرح له بالإدارة
-            </h1>
-            <p className="text-sm text-[#526277] leading-relaxed">
-              الحساب المسجل حالياً (<span dir="ltr">{user.email}</span>) لا يملك
-              صلاحية الوصول للوحة الإدارة. يجب تفعيل صلاحية الإدارة لهذا المعرّف:
-            </p>
-            <div
-              dir="ltr"
-              className="bg-[#F6F8FA] border border-[#E2E8F0] rounded-xl px-3 py-2 text-xs text-[#2B3A4D] font-mono select-all break-all"
-            >
-              {user.uid}
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="flex-1 min-h-[44px] px-4 py-2.5 bg-[#2B3A4D] hover:bg-[#1E293B] text-white text-sm font-semibold rounded-xl transition-colors cursor-pointer"
-              >
-                تبديل الحساب
-              </button>
-              <button
-                type="button"
-                onClick={onExitAdmin}
-                className="flex-1 min-h-[44px] px-4 py-2.5 border border-[#E2E8F0] bg-white text-[#2B3A4D] text-sm font-medium rounded-xl hover:border-[#2B3A4D] transition-colors cursor-pointer"
-              >
-                العودة للمتجر
-              </button>
-            </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -462,8 +439,7 @@ export function AdminBannerPage({
                   </div>
                 ) : (
                   <div className="border border-dashed border-[#CBD5E1] rounded-xl py-5 px-4 text-center text-xs sm:text-sm text-[#526277] bg-white">
-                    البنر مخفي حالياً — فعّل خيار «إظهار البنر في المتجر» بالأسفل
-                    ليظهر للزوار.
+                    البنر مخفي حالياً — فعّل خيار «البنر مفعّل» بالأسفل ليظهر للزوار.
                   </div>
                 )}
               </div>
@@ -480,7 +456,7 @@ export function AdminBannerPage({
                     إعدادات البنر الإعلاني
                   </h1>
                   <p className="text-xs sm:text-sm text-[#526277] mt-0.5">
-                    يتم حفظ التعديلات ومزامنتها فوراً لجميع زوار المتجر.
+                    يتم حفظ التعديلات وتطبيقها على البنر العلوي في المتجر.
                   </p>
                 </div>
 
@@ -509,7 +485,7 @@ export function AdminBannerPage({
 
               {bannerLoading && (
                 <p className="text-xs text-[#526277]">
-                  جاري تحميل الإعدادات الحالية من قاعدة البيانات...
+                  جاري تحميل الإعدادات الحالية...
                 </p>
               )}
 
@@ -687,6 +663,12 @@ export function AdminBannerPage({
                 >
                   <Check className="w-4 h-4 shrink-0" />
                   <span>تم حفظ ونشر إعدادات البنر في المتجر بنجاح.</span>
+                </div>
+              )}
+
+              {ephemeralNotice && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl p-3.5 leading-relaxed">
+                  ملاحظة استضافة Vercel: للحفظ الدائم بين جميع الزوار بعد إعادة تشغيل الخادم، اربط Upstash Redis / Vercel KV من لوحة Storage في Vercel.
                 </div>
               )}
 

@@ -1,5 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Check,
   Copy,
@@ -18,7 +17,6 @@ import {
   StampFrameStyle,
   StampPreview,
 } from './components/StampPreview';
-import { OperationType, db, handleFirestoreError } from './firebase';
 import { BannerConfig, DEFAULT_BANNER_CONFIG } from './types/banner';
 
 type StampCategory = 'name_title' | 'signature' | 'company' | 'custom';
@@ -126,50 +124,48 @@ export default function App() {
     return () => window.removeEventListener('hashchange', syncHash);
   }, []);
 
-  useEffect(() => {
-    const bannerPath = 'site_settings/banner';
-    const unsubscribe = onSnapshot(
-      doc(db, 'site_settings', 'banner'),
-      (snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
-          setBanner({
-            isActive: Boolean(data.isActive),
-            text: typeof data.text === 'string' ? data.text : DEFAULT_BANNER_CONFIG.text,
-            ctaLabel: typeof data.ctaLabel === 'string' ? data.ctaLabel : '',
-            ctaTarget:
-              data.ctaTarget === 'customize' ||
-              data.ctaTarget === 'shipping' ||
-              data.ctaTarget === 'contact' ||
-              data.ctaTarget === 'whatsapp' ||
-              data.ctaTarget === 'none'
-                ? data.ctaTarget
-                : 'none',
-            theme:
-              data.theme === 'navy' ||
-              data.theme === 'slate' ||
-              data.theme === 'emerald' ||
-              data.theme === 'amber'
-                ? data.theme
-                : 'navy',
-            dismissible: data.dismissible !== false,
-            updatedAt: data.updatedAt,
-            updatedBy: typeof data.updatedBy === 'string' ? data.updatedBy : undefined,
-          });
-          setBannerDismissed(false);
-        } else {
-          setBanner(DEFAULT_BANNER_CONFIG);
-        }
-        setBannerLoading(false);
-      },
-      (error) => {
-        setBannerLoading(false);
-        handleFirestoreError(error, OperationType.GET, bannerPath);
+  const loadBanner = useCallback(async () => {
+    try {
+      const res = await fetch('/api/banner', { cache: 'no-store' });
+      if (!res.ok) return;
+      const payload = (await res.json()) as { banner?: Partial<BannerConfig> };
+      const data = payload.banner;
+      if (data) {
+        setBanner({
+          isActive: Boolean(data.isActive),
+          text: typeof data.text === 'string' ? data.text : DEFAULT_BANNER_CONFIG.text,
+          ctaLabel: typeof data.ctaLabel === 'string' ? data.ctaLabel : '',
+          ctaTarget:
+            data.ctaTarget === 'customize' ||
+            data.ctaTarget === 'shipping' ||
+            data.ctaTarget === 'contact' ||
+            data.ctaTarget === 'whatsapp' ||
+            data.ctaTarget === 'none'
+              ? data.ctaTarget
+              : 'none',
+          theme:
+            data.theme === 'navy' ||
+            data.theme === 'slate' ||
+            data.theme === 'emerald' ||
+            data.theme === 'amber'
+              ? data.theme
+              : 'navy',
+          dismissible: data.dismissible !== false,
+          updatedAt: data.updatedAt,
+          updatedBy: typeof data.updatedBy === 'string' ? data.updatedBy : undefined,
+        });
+        setBannerDismissed(false);
       }
-    );
-
-    return () => unsubscribe();
+    } catch {
+      // Keep default banner if offline
+    } finally {
+      setBannerLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadBanner();
+  }, [loadBanner]);
 
   const activeCategoryConfig =
     STAMP_CATEGORIES.find((c) => c.id === category) || STAMP_CATEGORIES[0];
@@ -254,6 +250,10 @@ export default function App() {
         currentBanner={banner}
         bannerLoading={bannerLoading}
         whatsappUrl={whatsappDirectInquiryUrl}
+        onBannerSaved={(nextBanner) => {
+          setBanner(nextBanner);
+          setBannerDismissed(false);
+        }}
         onExitAdmin={handleExitAdmin}
       />
     );
