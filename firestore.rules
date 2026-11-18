@@ -28,7 +28,7 @@ service cloud.firestore {
     }
 
     function isBootstrappedAdmin() {
-      return isVerifiedUser() && request.auth.token.email == 'AzozSindi23@gmail.com';
+      return isVerifiedUser() && request.auth.token.email.lower() == 'azozsindi23@gmail.com';
     }
 
     function isAdmin() {

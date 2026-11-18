@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {
   User,
   onAuthStateChanged,
+  sendEmailVerification,
+  signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
 } from 'firebase/auth';
@@ -65,6 +67,12 @@ export function AdminBannerPage({
   const [isAdminVerified, setIsAdminVerified] = useState(false);
   const [checkingAdmin, setCheckingAdmin] = useState(false);
 
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+
   const [formState, setFormState] = useState<BannerConfig>(currentBanner);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -108,6 +116,75 @@ export function AdminBannerPage({
     setFormState(currentBanner);
   }, [currentBanner]);
 
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    const trimmedEmail = loginEmail.trim();
+    if (!trimmedEmail || !loginPassword) {
+      setErrorMessage('يرجى إدخال البريد الإلكتروني وكلمة المرور.');
+      return;
+    }
+
+    setSigningIn(true);
+    try {
+      await signInWithEmailAndPassword(auth, trimmedEmail, loginPassword);
+      setLoginPassword('');
+    } catch (err: unknown) {
+      const code =
+        typeof err === 'object' && err !== null && 'code' in err
+          ? String((err as { code?: string }).code)
+          : '';
+      if (
+        code === 'auth/invalid-credential' ||
+        code === 'auth/wrong-password' ||
+        code === 'auth/user-not-found'
+      ) {
+        setErrorMessage('البريد الإلكتروني أو كلمة المرور غير صحيحة.');
+      } else if (code === 'auth/operation-not-allowed') {
+        setErrorMessage(
+          'تسجيل الدخول بالبريد وكلمة المرور غير مفعّل بعد في Firebase Console (Authentication → Sign-in method → Email/Password).'
+        );
+      } else if (code === 'auth/too-many-requests') {
+        setErrorMessage('تم حظر المحاولات مؤقتاً لكثرتها. حاول بعد قليل.');
+      } else {
+        setErrorMessage('تعذر تسجيل الدخول. يرجى التحقق من البيانات والمحاولة مرة أخرى.');
+      }
+    } finally {
+      setSigningIn(false);
+    }
+  };
+
+  const handleSendVerification = async () => {
+    if (!user) return;
+    setErrorMessage(null);
+    try {
+      await sendEmailVerification(user);
+      setVerificationSent(true);
+    } catch {
+      setErrorMessage('تعذر إرسال رابط التفعيل حالياً. حاول مرة أخرى بعد قليل.');
+    }
+  };
+
+  const handleRefreshVerification = async () => {
+    if (!user) return;
+    setErrorMessage(null);
+    await user.reload();
+    const refreshed = auth.currentUser;
+    if (refreshed?.emailVerified) {
+      const normalizedEmail = (refreshed.email || '').trim().toLowerCase();
+      if (normalizedEmail === BOOTSTRAPPED_ADMIN_EMAIL) {
+        setIsAdminVerified(true);
+      } else {
+        const adminSnap = await getDoc(doc(db, 'admins', refreshed.uid));
+        setIsAdminVerified(adminSnap.exists());
+      }
+      setUser({ ...refreshed } as User);
+    } else {
+      setErrorMessage('لم يتم تأكيد البريد الإلكتروني بعد. افتح الرابط المرسل لبريدك ثم اضغط تحديث.');
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setErrorMessage(null);
     try {
@@ -131,6 +208,7 @@ export function AdminBannerPage({
 
   const handleSignOut = async () => {
     setErrorMessage(null);
+    setVerificationSent(false);
     await signOut(auth);
   };
 
@@ -180,12 +258,16 @@ export function AdminBannerPage({
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm sm:text-base font-display font-bold text-[#2B3A4D] min-w-0 truncate">
             <span className="truncate">Stamp pen</span>
-            <span className="text-[#94A3B8]" aria-hidden="true">
-              /
-            </span>
-            <span className="text-[#526277] font-medium truncate">
-              إدارة البنر
-            </span>
+            {isAdminVerified && (
+              <>
+                <span className="text-[#94A3B8]" aria-hidden="true">
+                  /
+                </span>
+                <span className="text-[#526277] font-medium truncate">
+                  إدارة البنر
+                </span>
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -219,14 +301,13 @@ export function AdminBannerPage({
             <div className="h-32 w-full bg-[#F6F8FA] rounded animate-pulse" />
           </div>
         ) : !user ? (
-          <div className="max-w-md mx-auto bg-white border border-[#E2E8F0] rounded-2xl p-6 sm:p-8 space-y-5 text-center">
-            <div className="space-y-2">
+          <div className="max-w-md mx-auto bg-white border border-[#E2E8F0] rounded-2xl p-6 sm:p-8 space-y-5">
+            <div className="space-y-1.5 text-center">
               <h1 className="font-display font-bold text-xl sm:text-2xl text-[#2B3A4D]">
-                لوحة إدارة بنر المتجر
+                دخول الإدارة
               </h1>
               <p className="text-sm text-[#526277] leading-relaxed">
-                سجل الدخول بحساب المسؤول للتحكم في ظهور البنر الترويجي وتعديل
-                نصه وألوانه لجميع زوار المتجر.
+                هذه الصفحة مخصصة لصاحب المتجر فقط. يرجى تسجيل الدخول للوصول.
               </p>
             </div>
 
@@ -239,13 +320,124 @@ export function AdminBannerPage({
               </div>
             )}
 
+            <form onSubmit={handleEmailSignIn} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="admin-login-email"
+                  className="block text-sm font-semibold text-[#2B3A4D] mb-1.5"
+                >
+                  البريد الإلكتروني (اسم المستخدم)
+                </label>
+                <input
+                  id="admin-login-email"
+                  type="email"
+                  dir="ltr"
+                  autoComplete="username"
+                  required
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder="AzozSindi23@gmail.com"
+                  className="w-full min-h-[46px] px-3.5 py-2.5 text-base sm:text-sm text-left bg-white border border-[#E2E8F0] rounded-xl text-[#2B3A4D] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#2B3A4D] focus:ring-1 focus:ring-[#2B3A4D]"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="admin-login-password"
+                  className="block text-sm font-semibold text-[#2B3A4D] mb-1.5"
+                >
+                  كلمة المرور
+                </label>
+                <div className="relative">
+                  <input
+                    id="admin-login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    dir="ltr"
+                    autoComplete="current-password"
+                    required
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full min-h-[46px] pl-11 pr-3.5 py-2.5 text-base sm:text-sm text-left bg-white border border-[#E2E8F0] rounded-xl text-[#2B3A4D] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#2B3A4D] focus:ring-1 focus:ring-[#2B3A4D]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center text-[#526277] hover:text-[#2B3A4D] cursor-pointer"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={signingIn}
+                className="w-full min-h-[48px] inline-flex items-center justify-center bg-[#2B3A4D] hover:bg-[#1E293B] disabled:opacity-60 text-white font-semibold text-sm sm:text-base px-5 py-3 rounded-xl transition-colors cursor-pointer"
+              >
+                <span>{signingIn ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}</span>
+              </button>
+            </form>
+
+            <div className="relative flex items-center py-1">
+              <div className="flex-grow border-t border-[#E2E8F0]" />
+              <span className="mx-3 text-xs text-[#94A3B8]">أو</span>
+              <div className="flex-grow border-t border-[#E2E8F0]" />
+            </div>
+
             <button
               type="button"
               onClick={handleGoogleSignIn}
-              className="w-full min-h-[48px] inline-flex items-center justify-center gap-2.5 bg-[#2B3A4D] hover:bg-[#1E293B] text-white font-semibold text-sm sm:text-base px-5 py-3 rounded-xl transition-colors cursor-pointer"
+              className="w-full min-h-[46px] inline-flex items-center justify-center gap-2 border border-[#E2E8F0] hover:border-[#2B3A4D] bg-white text-[#2B3A4D] font-medium text-sm px-5 py-2.5 rounded-xl transition-colors cursor-pointer"
             >
-              <span>تسجيل الدخول بحساب Google</span>
+              <span>الدخول بحساب Google</span>
             </button>
+          </div>
+        ) : !user.emailVerified ? (
+          <div className="max-w-lg mx-auto bg-white border border-[#E2E8F0] rounded-2xl p-6 sm:p-8 space-y-4 text-center">
+            <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center mx-auto">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+            <h1 className="font-display font-bold text-xl text-[#2B3A4D]">
+              مطلوب تأكيد البريد الإلكتروني
+            </h1>
+            <p className="text-sm text-[#526277] leading-relaxed">
+              لأغراض الحماية، يتطلب تفعيل البريد (<span dir="ltr">{user.email}</span>) لمرة واحدة قبل حفظ التعديلات.
+            </p>
+            {errorMessage && (
+              <div
+                role="alert"
+                className="bg-red-50 border border-red-200 text-red-800 text-xs sm:text-sm rounded-xl p-3.5"
+              >
+                {errorMessage}
+              </div>
+            )}
+            {verificationSent && (
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm rounded-xl p-3.5">
+                تم إرسال رابط التفعيل إلى بريدك الإلكتروني. افتح الرابط ثم اضغط «تحقق من التفعيل».
+              </div>
+            )}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleSendVerification}
+                className="flex-1 min-h-[46px] px-4 py-2.5 bg-[#2B3A4D] hover:bg-[#1E293B] text-white text-sm font-semibold rounded-xl transition-colors cursor-pointer"
+              >
+                إرسال رابط التفعيل
+              </button>
+              <button
+                type="button"
+                onClick={handleRefreshVerification}
+                className="flex-1 min-h-[46px] px-4 py-2.5 border border-[#E2E8F0] bg-white text-[#2B3A4D] text-sm font-medium rounded-xl hover:border-[#2B3A4D] transition-colors cursor-pointer"
+              >
+                تحقق من التفعيل
+              </button>
+            </div>
           </div>
         ) : !isAdminVerified ? (
           <div className="max-w-lg mx-auto bg-white border border-[#E2E8F0] rounded-2xl p-6 sm:p-8 space-y-4 text-center">
