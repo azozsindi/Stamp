@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { doc, onSnapshot } from 'firebase/firestore';
 import {
   Check,
   Copy,
@@ -9,12 +10,16 @@ import {
   ShieldCheck,
   Truck,
 } from 'lucide-react';
+import { AdminBannerPage } from './components/AdminBannerPage';
+import { AnnouncementBanner } from './components/AnnouncementBanner';
 import { InstagramIcon, TikTokIcon, WhatsAppIcon } from './components/Icons';
 import {
   InkColorId,
   StampFrameStyle,
   StampPreview,
 } from './components/StampPreview';
+import { OperationType, db, handleFirestoreError } from './firebase';
+import { BannerConfig, DEFAULT_BANNER_CONFIG } from './types/banner';
 
 type StampCategory = 'name_title' | 'signature' | 'company' | 'custom';
 type PaymentMethod = 'cod' | 'transfer';
@@ -90,6 +95,13 @@ const KSA_REGIONS = [
 ];
 
 export default function App() {
+  const [isAdminRoute, setIsAdminRoute] = useState<boolean>(
+    () => window.location.hash.toLowerCase() === '#admin'
+  );
+  const [banner, setBanner] = useState<BannerConfig>(DEFAULT_BANNER_CONFIG);
+  const [bannerLoading, setBannerLoading] = useState<boolean>(true);
+  const [bannerDismissed, setBannerDismissed] = useState<boolean>(false);
+
   const [penColor, setPenColor] = useState<PenColorId>('matte_silver');
   const [galleryView, setGalleryView] = useState<GalleryViewMode>('all');
   const [category, setCategory] = useState<StampCategory>('name_title');
@@ -105,6 +117,59 @@ export default function App() {
 
   const [productImgError, setProductImgError] = useState(false);
   const [logoImgError, setLogoImgError] = useState(false);
+
+  useEffect(() => {
+    const syncHash = () => {
+      setIsAdminRoute(window.location.hash.toLowerCase() === '#admin');
+    };
+    window.addEventListener('hashchange', syncHash);
+    return () => window.removeEventListener('hashchange', syncHash);
+  }, []);
+
+  useEffect(() => {
+    const bannerPath = 'site_settings/banner';
+    const unsubscribe = onSnapshot(
+      doc(db, 'site_settings', 'banner'),
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          setBanner({
+            isActive: Boolean(data.isActive),
+            text: typeof data.text === 'string' ? data.text : DEFAULT_BANNER_CONFIG.text,
+            ctaLabel: typeof data.ctaLabel === 'string' ? data.ctaLabel : '',
+            ctaTarget:
+              data.ctaTarget === 'customize' ||
+              data.ctaTarget === 'shipping' ||
+              data.ctaTarget === 'contact' ||
+              data.ctaTarget === 'whatsapp' ||
+              data.ctaTarget === 'none'
+                ? data.ctaTarget
+                : 'none',
+            theme:
+              data.theme === 'navy' ||
+              data.theme === 'slate' ||
+              data.theme === 'emerald' ||
+              data.theme === 'amber'
+                ? data.theme
+                : 'navy',
+            dismissible: data.dismissible !== false,
+            updatedAt: data.updatedAt,
+            updatedBy: typeof data.updatedBy === 'string' ? data.updatedBy : undefined,
+          });
+          setBannerDismissed(false);
+        } else {
+          setBanner(DEFAULT_BANNER_CONFIG);
+        }
+        setBannerLoading(false);
+      },
+      (error) => {
+        setBannerLoading(false);
+        handleFirestoreError(error, OperationType.GET, bannerPath);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
 
   const activeCategoryConfig =
     STAMP_CATEGORIES.find((c) => c.id === category) || STAMP_CATEGORIES[0];
@@ -174,8 +239,36 @@ export default function App() {
     }
   };
 
+  const handleExitAdmin = () => {
+    window.history.replaceState(
+      null,
+      '',
+      window.location.pathname + window.location.search
+    );
+    setIsAdminRoute(false);
+  };
+
+  if (isAdminRoute) {
+    return (
+      <AdminBannerPage
+        currentBanner={banner}
+        bannerLoading={bannerLoading}
+        whatsappUrl={whatsappDirectInquiryUrl}
+        onExitAdmin={handleExitAdmin}
+      />
+    );
+  }
+
   return (
     <div id="top" className="min-h-screen bg-white text-[#2B3A4D] pb-24 md:pb-0 overflow-x-clip">
+      {banner.isActive && !bannerDismissed && (
+        <AnnouncementBanner
+          banner={banner}
+          whatsappUrl={whatsappDirectInquiryUrl}
+          onDismiss={() => setBannerDismissed(true)}
+        />
+      )}
+
       {/* Top Navigation Bar: Strict 3-zone contract */}
       <header className="border-b border-[#E2E8F0] bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-4 sm:gap-8">

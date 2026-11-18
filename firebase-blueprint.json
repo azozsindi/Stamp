@@ -1,0 +1,90 @@
+{
+  "entities": {
+    "BannerConfig": {
+      "title": "BannerConfig",
+      "description": "Public promotional announcement banner configuration displayed at the top of the Stamp pen storefront.",
+      "type": "object",
+      "properties": {
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the announcement banner is currently visible to storefront visitors."
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140,
+          "description": "Primary promotional text displayed inside the banner."
+        },
+        "ctaLabel": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "Optional action link label shown next to the banner message."
+        },
+        "ctaTarget": {
+          "type": "string",
+          "enum": ["none", "customize", "shipping", "contact", "whatsapp"],
+          "description": "Destination target when the banner action link is clicked."
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["navy", "slate", "emerald", "amber"],
+          "description": "Visual color theme for the announcement banner."
+        },
+        "dismissible": {
+          "type": "boolean",
+          "description": "Whether storefront visitors can dismiss the banner."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the last banner update."
+        },
+        "updatedBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the authenticated admin who updated the banner."
+        }
+      },
+      "required": [
+        "isActive",
+        "text",
+        "ctaLabel",
+        "ctaTarget",
+        "theme",
+        "dismissible",
+        "updatedAt",
+        "updatedBy"
+      ]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized store administrator record keyed by Firebase Auth UID.",
+      "type": "object",
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": ["admin"],
+          "description": "Role granted to this administrator."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when admin access was recorded."
+        }
+      },
+      "required": ["role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/site_settings/{settingId}": {
+      "schema": { "$ref": "#/entities/BannerConfig" },
+      "description": "Storefront configuration documents (currently 'banner' document). Publicly readable for get on 'banner'; writable only by verified admins."
+    },
+    "/admins/{userId}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Authorized admin UIDs. Readable by the owning user or admins; writable only by existing bootstrapped admins."
+    }
+  }
+}
